@@ -82,7 +82,7 @@ impl AocClient {
             return AocClient {
                 session,
                 client: Self::make_client(),
-                throttle_timestamp: UNIX_EPOCH.into(),
+                throttle_timestamp: UNIX_EPOCH,
                 mem_cache: HashMap::new(),
             };
         } else {
@@ -186,7 +186,7 @@ impl Drop for AocClient {
         write(
             self.cache_dir.join("libaoc/throttle_timestamp"),
             self.throttle_timestamp
-                .duration_since(UNIX_EPOCH.into())
+                .duration_since(UNIX_EPOCH)
                 .unwrap_or(
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)
