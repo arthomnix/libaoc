@@ -71,22 +71,24 @@ impl AocClient {
 
     /// Create an `AocClient` using the given session token and the default cache directory.
     pub fn new(session: String) -> Self {
-        let cache_dir = option_env!("LIBAOC_CACHE_DIRECTORY")
-            .map(|d| PathBuf::from(d))
-            .or(cache_dir());
-        if let Some(cache_dir) = cache_dir {
-            #[cfg(feature = "file_cache")]
-            return Self::new_with_custom_cache(session, cache_dir);
+        #[cfg(not(feature = "file_cache"))]
+        return AocClient {
+            session,
+            client: Self::make_client(),
+            throttle_timestamp: UNIX_EPOCH,
+            mem_cache: HashMap::new(),
+        };
 
-            #[cfg(not(feature = "file_cache"))]
-            return AocClient {
-                session,
-                client: Self::make_client(),
-                throttle_timestamp: UNIX_EPOCH,
-                mem_cache: HashMap::new(),
-            };
-        } else {
-            panic!("Could not find a cache directory for inputs!\nSpecify a directory in the AOC_CACHE_DIRECTORY environment variable, or disable the cache feature **and implement your own caching**.");
+        #[cfg(feature = "file_cache")]
+        {
+            let cache_dir = option_env!("LIBAOC_CACHE_DIRECTORY")
+                .map(|d| PathBuf::from(d))
+                .or(cache_dir());
+            if let Some(cache_dir) = cache_dir {
+                return Self::new_with_custom_cache(session, cache_dir);
+            } else {
+                panic!("Could not find a cache directory for inputs!\nSpecify a directory in the AOC_CACHE_DIRECTORY environment variable, or disable the cache feature **and implement your own caching**.");
+            }
         }
     }
 
