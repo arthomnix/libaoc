@@ -44,18 +44,11 @@ impl AocClient {
     }
 
     fn make_client() -> reqwest::blocking::Client {
-        #[cfg(feature = "file_cache")]
         let user_agent = format!(
-            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev) reqwest/0.11",
+            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev{4}) reqwest/0.11",
             env!("CARGO_PKG_VERSION"),
             "arthomnix", "contact", "libaoc",
-        );
-
-        #[cfg(not(feature = "file_cache"))]
-        let user_agent = format!(
-            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev; builtin caching disabled by user) reqwest/0.11",
-            env!("CARGO_PKG_VERSION"),
-            "arthomnix", "contact", "libaoc",
+            if cfg!(not(feature = "file_cache")) { "; builtin caching disabled by user" } else { "" }
         );
 
         reqwest::blocking::Client::builder()
@@ -66,7 +59,7 @@ impl AocClient {
 
     /// Create an `AocClient` using the session token stored in the environment variable `AOC_SESSION`.
     pub fn new_from_env() -> Self {
-        Self::new(env!("AOC_SESSION").to_string())
+        Self::new(std::env::var("AOC_SESSION").expect("AOC_SESSION environment variable not found!").to_string())
     }
 
     /// Create an `AocClient` using the given session token and the default cache directory.
@@ -84,7 +77,7 @@ impl AocClient {
 
         #[cfg(feature = "file_cache")]
         {
-            let cache_dir = option_env!("LIBAOC_CACHE_DIRECTORY")
+            let cache_dir = std::env::var("LIBAOC_CACHE_DIRECTORY").ok()
                 .map(|d| PathBuf::from(d))
                 .or(cache_dir());
             if let Some(cache_dir) = cache_dir {
