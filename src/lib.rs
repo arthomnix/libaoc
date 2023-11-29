@@ -72,12 +72,15 @@ impl AocClient {
     /// Create an `AocClient` using the given session token and the default cache directory.
     pub fn new(session: String) -> Self {
         #[cfg(not(feature = "file_cache"))]
-        return AocClient {
-            session,
-            client: Self::make_client(),
-            throttle_timestamp: UNIX_EPOCH,
-            mem_cache: HashMap::new(),
-        };
+        {
+            eprintln!("libaoc: warning: persistent cache disabled - make sure to implement your own cache, or reenable the file_cache feature!");
+            return AocClient {
+                session,
+                client: Self::make_client(),
+                throttle_timestamp: UNIX_EPOCH,
+                mem_cache: HashMap::new(),
+            };
+        }
 
         #[cfg(feature = "file_cache")]
         {
