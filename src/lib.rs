@@ -46,14 +46,14 @@ impl AocClient {
     fn make_client() -> reqwest::blocking::Client {
         #[cfg(feature = "file_cache")]
         let user_agent = format!(
-            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev)",
+            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev) reqwest/0.11",
             env!("CARGO_PKG_VERSION"),
             "arthomnix", "contact", "libaoc",
         );
 
         #[cfg(not(feature = "file_cache"))]
         let user_agent = format!(
-            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev; builtin caching disabled by user)",
+            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev; builtin caching disabled by user) reqwest/0.11",
             env!("CARGO_PKG_VERSION"),
             "arthomnix", "contact", "libaoc",
         );
