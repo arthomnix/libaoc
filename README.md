@@ -4,7 +4,7 @@ A simple Rust library for retrieving Advent of Code input data. Used by my Adven
 
 ## Guidelines compliance
 
-This library complies with the [Advent of Code automation guidelines](https://www.reddit.com/r/adventofcode/wiki/faqs/automation/):
+This library complies with the [Advent of Code automation guidelines](https://old.reddit.com/r/adventofcode/wiki/faqs/automation/):
 
 * Input data is cached locally
   * An in-memory cache is always used; a persistent file cache is enabled by default but can be disabled for use cases where this will not work (in this case, the user is strongly encouraged to write their own persistent caching system)
