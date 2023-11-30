@@ -3,9 +3,9 @@ use scraper::{CaseSensitivity, Element, Html, Selector};
 
 #[derive(Clone, Debug)]
 pub struct Example {
-    data: String,
-    part1_answer: String,
-    part2_answer: Option<String>,
+    pub data: String,
+    pub part1_answer: String,
+    pub part2_answer: Option<String>,
 }
 
 impl Example {
