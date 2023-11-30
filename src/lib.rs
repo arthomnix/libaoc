@@ -9,9 +9,11 @@
 //! suitable for your use case, disable the `file_cache` feature and implement your own caching
 //! system.
 
-mod cache;
+pub mod cache;
+pub mod example_parse;
 
 use crate::cache::{FileCacheProvider, PersistentCacheProvider};
+use crate::example_parse::{Example::parse_example, Example};
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -23,6 +25,7 @@ pub struct AocClient<C: PersistentCacheProvider> {
     client: reqwest::blocking::Client,
     throttle_timestamp: SystemTime,
     mem_cache: HashMap<(i32, i32), String>,
+    example_cache: HashMap<(i32, i32), String>,
     persistent_cache: C,
 }
 
@@ -56,6 +59,29 @@ impl<C: PersistentCacheProvider> AocClient<C> {
             .unwrap()
     }
 
+    fn throttle(&mut self) -> bool {
+        let throttle_duration = SystemTime::now().duration_since(self.throttle_timestamp);
+        if throttle_duration
+            .as_ref()
+            .is_ok_and(|d| *d < MIN_TIME_BETWEEN_REQUESTS)
+        {
+            let sleep_duration = MIN_TIME_BETWEEN_REQUESTS - throttle_duration.unwrap();
+            eprintln!(
+                "libaoc: request throttled - sleeping for {}s",
+                sleep_duration.as_secs_f64()
+            );
+            sleep(sleep_duration);
+            self.throttle_timestamp = SystemTime::now();
+            true
+        } else if throttle_duration.is_err() {
+            eprintln!("libaoc: warning: received SystemTimeError while processing throttle, sleeping for 1 second and retrying...");
+            sleep(Duration::from_secs(1));
+            false
+        } else {
+            true
+        }
+    }
+
     /// Create an `AocClient` using the given session token and cache directory.
     pub fn new_with_custom_cache(session: String, cache_provider: C) -> Self {
         let throttle_timestamp = cache_provider
@@ -68,30 +94,16 @@ impl<C: PersistentCacheProvider> AocClient<C> {
             client: Self::make_client(),
             throttle_timestamp,
             mem_cache: HashMap::new(),
+            example_cache: HashMap::new(),
         }
     }
 
     /// Get the input text for the Advent of Code puzzle for the given day and year, bypassing the cache.
     /// Only use this if you believe the cached input is corrupted.
     pub fn get_input_without_cache(&mut self, year: i32, day: i32) -> reqwest::Result<String> {
-        let throttle_duration = SystemTime::now().duration_since(self.throttle_timestamp);
-        if throttle_duration
-            .as_ref()
-            .is_ok_and(|d| *d < MIN_TIME_BETWEEN_REQUESTS)
-        {
-            let sleep_duration = MIN_TIME_BETWEEN_REQUESTS - throttle_duration.unwrap();
-            eprintln!(
-                "libaoc: request throttled - sleeping for {}s",
-                sleep_duration.as_secs_f64()
-            );
-            sleep(sleep_duration);
-        } else if throttle_duration.is_err() {
-            eprintln!("libaoc: warning: received SystemTimeError while processing throttle, sleeping for 1 second and retrying...");
-            sleep(Duration::from_secs(1));
+        if !self.throttle() {
             return self.get_input_without_cache(year, day);
         }
-
-        self.throttle_timestamp = SystemTime::now();
 
         let text = self
             .client
@@ -125,15 +137,70 @@ impl<C: PersistentCacheProvider> AocClient<C> {
         self.mem_cache
             .get(&(year, day))
             .map(|s| Ok(s.clone()))
-            .or(self.persistent_cache.load((year, day)).map(|o| Ok(o)))
+            .or_else(|| {
+                self.persistent_cache.load((year, day)).map(|o| {
+                    self.mem_cache.insert((year, day), o.clone());
+                    Ok(o)
+                })
+            })
             .unwrap_or_else(|| self.get_input_without_cache(year, day))
+    }
+
+    pub fn get_example_without_cache(
+        &mut self,
+        year: i32,
+        day: i32,
+    ) -> reqwest::Result<Option<Example>> {
+        if !self.throttle() {
+            return self.get_example_without_cache(year, day);
+        }
+
+        let html = self
+            .client
+            .get(format!("https://adventofcode.com/{year}/day/{day}"))
+            .header("Cookie", format!("session={}", self.session))
+            .send()
+            .and_then(|r| r.text());
+
+        if let Ok(html) = &html {
+            self.example_cache.insert((year, day), html.clone());
+        }
+
+        html.map(|html| Example::parse_example(html))
+    }
+
+    pub fn get_example_without_persistent_cache(
+        &mut self,
+        year: i32,
+        day: i32,
+    ) -> reqwest::Result<Option<Example>> {
+        self.example_cache
+            .get(&(year, day))
+            .map(|s| Ok(Example::parse_example(s.clone())))
+            .unwrap_or_else(|| self.get_example_without_cache(year, day))
+    }
+
+    pub fn get_example(&mut self, year: i32, day: i32) -> reqwest::Result<Option<Example>> {
+        self.example_cache
+            .get(&(year, day))
+            .map(|s| Ok(Example::parse_example(s.clone())))
+            .or_else(|| {
+                self.persistent_cache.load_example((year, day)).map(|o| {
+                    self.example_cache.insert((year, day), o.clone());
+                    Ok(Example::parse_example(o))
+                })
+            })
+            .unwrap_or_else(|| self.get_example_without_cache(year, day))
     }
 }
 
 impl<C: PersistentCacheProvider> Drop for AocClient<C> {
     fn drop(&mut self) {
-        self.persistent_cache
-            .save_all(&self.mem_cache, self.throttle_timestamp);
+        self.persistent_cache.save_all(
+            &self.mem_cache,
+            &self.example_cache,
+            self.throttle_timestamp,
+        );
     }
 }
 
@@ -146,6 +213,11 @@ mod test {
         let mut client = AocClient::new_from_env();
         let res = client.get_input(2022, 25);
         assert!(res.is_ok());
+        let example = client.get_example(2022, 25);
+        assert!(example.is_ok());
+        let example = example.unwrap();
+        assert!(example.is_some());
         println!("{}", res.unwrap());
+        println!("{:?}", example.unwrap());
     }
 }
