@@ -13,7 +13,7 @@ pub mod cache;
 pub mod example_parse;
 
 use crate::cache::{FileCacheProvider, PersistentCacheProvider};
-use crate::example_parse::{Example::parse_example, Example};
+use crate::example_parse::Example;
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -25,7 +25,7 @@ pub struct AocClient<C: PersistentCacheProvider> {
     client: reqwest::blocking::Client,
     throttle_timestamp: SystemTime,
     mem_cache: HashMap<(i32, i32), String>,
-    example_cache: HashMap<(i32, i32), String>,
+    example_cache: HashMap<(i32, i32, i32), String>,
     persistent_cache: C,
 }
 
@@ -152,9 +152,10 @@ impl<C: PersistentCacheProvider> AocClient<C> {
         &mut self,
         year: i32,
         day: i32,
+        part: i32,
     ) -> reqwest::Result<Option<Example>> {
         if !self.throttle() {
-            return self.get_example_without_cache(year, day);
+            return self.get_example_without_cache(year, day, part);
         }
 
         let html = self
@@ -165,7 +166,7 @@ impl<C: PersistentCacheProvider> AocClient<C> {
             .and_then(|r| r.text());
 
         if let Ok(html) = &html {
-            self.example_cache.insert((year, day), html.clone());
+            self.example_cache.insert((year, day, part), html.clone());
         }
 
         html.map(|html| Example::parse_example(html))
@@ -177,25 +178,26 @@ impl<C: PersistentCacheProvider> AocClient<C> {
         &mut self,
         year: i32,
         day: i32,
+        part: i32,
     ) -> reqwest::Result<Option<Example>> {
         self.example_cache
-            .get(&(year, day))
+            .get(&(year, day, part))
             .map(|s| Ok(Example::parse_example(s.clone())))
-            .unwrap_or_else(|| self.get_example_without_cache(year, day))
+            .unwrap_or_else(|| self.get_example_without_cache(year, day, part))
     }
 
     /// Get the example input and (possibly unreliable) answer(s) for the given day and year.
-    pub fn get_example(&mut self, year: i32, day: i32) -> reqwest::Result<Option<Example>> {
+    pub fn get_example(&mut self, year: i32, day: i32, part: i32) -> reqwest::Result<Option<Example>> {
         self.example_cache
-            .get(&(year, day))
+            .get(&(year, day, part))
             .map(|s| Ok(Example::parse_example(s.clone())))
             .or_else(|| {
-                self.persistent_cache.load_example((year, day)).map(|o| {
-                    self.example_cache.insert((year, day), o.clone());
+                self.persistent_cache.load_example((year, day, part)).map(|o| {
+                    self.example_cache.insert((year, day, part), o.clone());
                     Ok(Example::parse_example(o))
                 })
             })
-            .unwrap_or_else(|| self.get_example_without_cache(year, day))
+            .unwrap_or_else(|| self.get_example_without_cache(year, day, part))
     }
 }
 
@@ -218,7 +220,7 @@ mod test {
         let mut client = AocClient::new_from_env();
         let res = client.get_input(2022, 25);
         assert!(res.is_ok());
-        let example = client.get_example(2022, 25);
+        let example = client.get_example(2022, 25, 1);
         assert!(example.is_ok());
         let example = example.unwrap();
         assert!(example.is_some());

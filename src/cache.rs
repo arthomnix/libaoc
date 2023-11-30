@@ -7,20 +7,20 @@ use std::{env, fs};
 pub trait PersistentCacheProvider {
     fn save(&mut self, key: (i32, i32), text: String);
 
-    fn save_example(&mut self, key: (i32, i32), html: String);
+    fn save_example(&mut self, key: (i32, i32, i32), html: String);
 
     fn save_throttle_timestamp(&mut self, timestamp: SystemTime);
 
     fn load(&self, key: (i32, i32)) -> Option<String>;
 
-    fn load_example(&self, key: (i32, i32)) -> Option<String>;
+    fn load_example(&self, key: (i32, i32, i32)) -> Option<String>;
 
     fn load_throttle_timestamp(&self) -> Option<SystemTime>;
 
     fn save_all(
         &mut self,
         real: &HashMap<(i32, i32), String>,
-        examples: &HashMap<(i32, i32), String>,
+        examples: &HashMap<(i32, i32, i32), String>,
         throttle_timestamp: SystemTime,
     ) {
         self.save_throttle_timestamp(throttle_timestamp);
@@ -65,15 +65,15 @@ impl PersistentCacheProvider for FileCacheProvider {
         }
     }
 
-    fn save_example(&mut self, key: (i32, i32), html: String) {
-        let (year, day) = key;
+    fn save_example(&mut self, key: (i32, i32, i32), html: String) {
+        let (year, day, part) = key;
         let dir = self.cache_dir.join(format!("libaoc/examples/{year}"));
         if let Err(e) = fs::create_dir_all(dir) {
             eprintln!("libaoc: warning: failed to create directory for caching: {e}");
         }
         let file = self
             .cache_dir
-            .join(format!("libaoc/examples/{year}/{day}.html"));
+            .join(format!("libaoc/examples/{year}/{day}_{part}.html"));
         if let Err(e) = fs::write(file, html) {
             eprintln!("libaoc: warning: failed to save cache file: {e}");
         }
@@ -111,11 +111,11 @@ impl PersistentCacheProvider for FileCacheProvider {
         }
     }
 
-    fn load_example(&self, key: (i32, i32)) -> Option<String> {
-        let (year, day) = key;
+    fn load_example(&self, key: (i32, i32, i32)) -> Option<String> {
+        let (year, day, part) = key;
         let file = self
             .cache_dir
-            .join(format!("libaoc/examples/{year}/{day}.html"));
+            .join(format!("libaoc/examples/{year}/{day}_{part}.html"));
         if file.exists() {
             fs::read_to_string(file).ok()
         } else {
