@@ -146,6 +146,8 @@ impl<C: PersistentCacheProvider> AocClient<C> {
             .unwrap_or_else(|| self.get_input_without_cache(year, day))
     }
 
+    /// Get the example input and (possibly unreliable) answer(s) for the given day and year, bypassing the cache.
+    /// Only use this if you believe the cache is corrupted, or you have completed part 1 and want to get the example answer for part 2 (which is hidden before part 1 is complete)>.
     pub fn get_example_without_cache(
         &mut self,
         year: i32,
@@ -169,6 +171,8 @@ impl<C: PersistentCacheProvider> AocClient<C> {
         html.map(|html| Example::parse_example(html))
     }
 
+    /// Get the example input and (possibly unreliable) answer(s) for the given day and year, bypassing the persistent cache but using the in-memory cache.
+    /// Only use this if you believe the consistent cache is corrupted.
     pub fn get_example_without_persistent_cache(
         &mut self,
         year: i32,
@@ -180,6 +184,7 @@ impl<C: PersistentCacheProvider> AocClient<C> {
             .unwrap_or_else(|| self.get_example_without_cache(year, day))
     }
 
+    /// Get the example input and (possibly unreliable) answer(s) for the given day and year.
     pub fn get_example(&mut self, year: i32, day: i32) -> reqwest::Result<Option<Example>> {
         self.example_cache
             .get(&(year, day))
