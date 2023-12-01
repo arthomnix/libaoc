@@ -4,6 +4,7 @@ use scraper::{CaseSensitivity, Element, Html, Selector};
 #[derive(Clone, Debug)]
 pub struct Example {
     pub data: String,
+    pub part2_data: Option<String>,
     pub part1_answer: String,
     pub part2_answer: Option<String>,
 }
@@ -18,6 +19,7 @@ impl Example {
         let mut found_example = false;
         let mut part2 = false;
         let mut example: Option<String> = None;
+        let mut part2_example: Option<String> = None;
         let mut answer: Option<String> = None;
         let mut part2_answer: Option<String> = None;
 
@@ -35,7 +37,11 @@ impl Example {
                     {
                         if let Some(child) = element.first_element_child() {
                             if child.value().name() == "code" {
-                                example = Some(child.inner_html());
+                                if part2 {
+                                    part2_example = Some(child.inner_html());
+                                } else {
+                                    example = Some(child.inner_html());
+                                }
                                 found_example = true;
                             }
                         }
@@ -60,6 +66,7 @@ impl Example {
                         CaseSensitivity::AsciiCaseInsensitive,
                     ) {
                         part2 = true;
+                        found_example = false;
                     }
                 }
                 _ => {}
@@ -69,6 +76,7 @@ impl Example {
         match (example, answer) {
             (Some(example), Some(answer)) => Some(Example {
                 data: example,
+                part2_data: part2_example,
                 part1_answer: answer,
                 part2_answer,
             }),
