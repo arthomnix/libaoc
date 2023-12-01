@@ -6,8 +6,8 @@
 //!
 //! Requests are cached and throttled to one every 3 minutes in accordance with the Advent of Code
 //! automation guidelines. If for whatever reason the default file caching implementation isn't
-//! suitable for your use case, disable the `file_cache` feature and implement your own caching
-//! system.
+//! suitable for your use case, create your own implementation of the `PersistentCacheProvider`
+//! trait.
 
 pub mod cache;
 pub mod example_parse;
@@ -187,6 +187,10 @@ impl<C: PersistentCacheProvider> AocClient<C> {
     }
 
     /// Get the example input and (possibly unreliable) answer(s) for the given day and year.
+    ///
+    /// The `part` parameter is only used to cache the data for part 1 and part 2 separately (since
+    /// the answer for part 2 will only be available once your account has completed part 1). All
+    /// example data present in the HTML is returned regardless of the value of the parameter.
     pub fn get_example(&mut self, year: i32, day: i32, part: i32) -> reqwest::Result<Option<Example>> {
         self.example_cache
             .get(&(year, day, part))
