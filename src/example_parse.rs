@@ -26,7 +26,7 @@ impl Example {
         for element in articles {
             match element.value().name() {
                 "p" => {
-                    if element.inner_html().to_lowercase().contains("for example") {
+                    if element.inner_html().to_lowercase().contains("example") {
                         found_for_example = true
                     }
                 }
