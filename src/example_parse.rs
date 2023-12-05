@@ -27,7 +27,7 @@ impl Example {
             match element.value().name() {
                 "p" => {
                     let inner = element.inner_html().to_lowercase();
-                    if inner.contains("for example") || (inner.contains("example") && !inner.contains("above") && !inner.contains("this") && !inner.contains("again")) {
+                    if inner.contains("for example") {
                         found_for_example = true
                     }
                 }
