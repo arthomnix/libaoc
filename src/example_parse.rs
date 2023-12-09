@@ -28,7 +28,7 @@ impl Example {
                 "p" => {
                     let inner = element.inner_html().to_lowercase();
                     if inner.contains("for example") {
-                        found_for_example = true
+                        found_for_example = true;
                     }
                 }
                 "pre" => {
@@ -68,6 +68,7 @@ impl Example {
                     ) {
                         part2 = true;
                         found_example = false;
+                        found_for_example = false;
                     }
                 }
                 _ => {}
