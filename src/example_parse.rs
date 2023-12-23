@@ -77,8 +77,8 @@ impl Example {
 
         match (example, answer) {
             (Some(example), Some(answer)) => Some(Example {
-                data: example,
-                part2_data: part2_example,
+                data: html_escape::decode_html_entities(&example).to_string(),
+                part2_data: part2_example.map(|s| html_escape::decode_html_entities(&s).to_string()),
                 part1_answer: answer,
                 part2_answer,
             }),
