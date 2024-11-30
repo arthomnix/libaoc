@@ -48,7 +48,7 @@ impl AocClient<FileCacheProvider> {
 impl<C: PersistentCacheProvider> AocClient<C> {
     fn make_client() -> reqwest::blocking::Client {
         let user_agent = format!(
-            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev) reqwest/0.11",
+            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev) reqwest/0.12",
             env!("CARGO_PKG_VERSION"),
             "arthomnix", "contact", "libaoc",
         );
@@ -191,15 +191,22 @@ impl<C: PersistentCacheProvider> AocClient<C> {
     /// The `part` parameter is only used to cache the data for part 1 and part 2 separately (since
     /// the answer for part 2 will only be available once your account has completed part 1). All
     /// example data present in the HTML is returned regardless of the value of the parameter.
-    pub fn get_example(&mut self, year: i32, day: i32, part: i32) -> reqwest::Result<Option<Example>> {
+    pub fn get_example(
+        &mut self,
+        year: i32,
+        day: i32,
+        part: i32,
+    ) -> reqwest::Result<Option<Example>> {
         self.example_cache
             .get(&(year, day, part))
             .map(|s| Ok(Example::parse_example(s.clone())))
             .or_else(|| {
-                self.persistent_cache.load_example((year, day, part)).map(|o| {
-                    self.example_cache.insert((year, day, part), o.clone());
-                    Ok(Example::parse_example(o))
-                })
+                self.persistent_cache
+                    .load_example((year, day, part))
+                    .map(|o| {
+                        self.example_cache.insert((year, day, part), o.clone());
+                        Ok(Example::parse_example(o))
+                    })
             })
             .unwrap_or_else(|| self.get_example_without_cache(year, day, part))
     }

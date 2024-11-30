@@ -40,7 +40,11 @@ pub struct FileCacheProvider {
 impl FileCacheProvider {
     pub fn new() -> Self {
         Self {
-            cache_dir: env::var("LIBAOC_CACHE_DIRECTORY").ok().map(|d| PathBuf::from(d)).or(dirs::cache_dir()).expect("Could not find a cache directory for inputs!\nSpecify a directory in the LIBAOC_CACHE_DIRECTORY environment variable."),
+            cache_dir: env::var("LIBAOC_CACHE_DIRECTORY")
+                .ok()
+                .map(|d| PathBuf::from(d))
+                .or(dirs::cache_dir())
+                .expect("Could not find a cache directory for inputs!\nSpecify a directory in the LIBAOC_CACHE_DIRECTORY environment variable."),
         }
     }
 
