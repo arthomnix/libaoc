@@ -22,7 +22,6 @@ use reqwest::header::HeaderMap;
 static MIN_TIME_BETWEEN_REQUESTS: Duration = Duration::from_secs(180);
 
 pub struct AocClient<C: PersistentCacheProvider> {
-    session: String,
     client: reqwest::blocking::Client,
     throttle_timestamp: SystemTime,
     mem_cache: HashMap<(i32, i32), String>,
@@ -48,7 +47,7 @@ impl AocClient<FileCacheProvider> {
 
 impl<C: PersistentCacheProvider> AocClient<C> {
     fn make_client(session: &str) -> reqwest::blocking::Client {
-        let email = format_args!("{2}-{1}@{0}.dev", "arthomnix", "contact", "libaoc");
+        let email = format!("{2}-{1}@{0}.dev", "arthomnix", "contact", "libaoc");
 
         let user_agent = format!(
             "libaoc/{} (automated; +https://github.com/arthomnix/libaoc; +{}) reqwest/0.12",
@@ -58,7 +57,7 @@ impl<C: PersistentCacheProvider> AocClient<C> {
 
         let mut headers = HeaderMap::new();
         headers.insert("Cookie", format!("session={session}").parse().expect("Invalid session token!"));
-        headers.insert("From", format!("{email}").parse().unwrap());
+        headers.insert("From", email.parse().unwrap());
 
         reqwest::blocking::Client::builder()
             .user_agent(user_agent)
@@ -99,7 +98,6 @@ impl<C: PersistentCacheProvider> AocClient<C> {
         let client = Self::make_client(&session);
 
         AocClient {
-            session,
             persistent_cache: cache_provider,
             client,
             throttle_timestamp,
