@@ -17,6 +17,7 @@ use crate::example_parse::Example;
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use reqwest::header::HeaderMap;
 
 static MIN_TIME_BETWEEN_REQUESTS: Duration = Duration::from_secs(180);
 
@@ -46,39 +47,46 @@ impl AocClient<FileCacheProvider> {
 }
 
 impl<C: PersistentCacheProvider> AocClient<C> {
-    fn make_client() -> reqwest::blocking::Client {
+    fn make_client(session: &str) -> reqwest::blocking::Client {
+        let email = format_args!("{2}-{1}@{0}.dev", "arthomnix", "contact", "libaoc");
+
         let user_agent = format!(
-            "libaoc/{0} (automated; +https://github.com/arthomnix/libaoc; +{3}-{2}@{1}.dev) reqwest/0.12",
+            "libaoc/{} (automated; +https://github.com/arthomnix/libaoc; +{}) reqwest/0.12",
             env!("CARGO_PKG_VERSION"),
-            "arthomnix", "contact", "libaoc",
+            email,
         );
+
+        let mut headers = HeaderMap::new();
+        headers.insert("Cookie", format!("session={session}").parse().expect("Invalid session token!"));
+        headers.insert("From", format!("{email}").parse().unwrap());
 
         reqwest::blocking::Client::builder()
             .user_agent(user_agent)
+            .default_headers(headers)
             .build()
             .unwrap()
     }
 
     fn throttle(&mut self) -> bool {
         let throttle_duration = SystemTime::now().duration_since(self.throttle_timestamp);
-        if throttle_duration
-            .as_ref()
-            .is_ok_and(|d| *d < MIN_TIME_BETWEEN_REQUESTS)
-        {
-            let sleep_duration = MIN_TIME_BETWEEN_REQUESTS - throttle_duration.unwrap();
-            eprintln!(
-                "libaoc: request throttled - sleeping for {}s",
-                sleep_duration.as_secs_f64()
-            );
-            sleep(sleep_duration);
-            self.throttle_timestamp = SystemTime::now();
-            true
-        } else if throttle_duration.is_err() {
-            eprintln!("libaoc: warning: received SystemTimeError while processing throttle, sleeping for 1 second and retrying...");
-            sleep(Duration::from_secs(1));
-            false
-        } else {
-            true
+        self.throttle_timestamp = SystemTime::now();
+        match &throttle_duration {
+            Ok(d) if *d < MIN_TIME_BETWEEN_REQUESTS => {
+                let sleep_duration = MIN_TIME_BETWEEN_REQUESTS - throttle_duration.unwrap();
+                eprintln!(
+                    "libaoc: request throttled - sleeping for {}s",
+                    sleep_duration.as_secs_f64()
+                );
+                sleep(sleep_duration);
+                self.throttle_timestamp = SystemTime::now();
+                true
+            },
+            Err(_) => {
+                eprintln!("libaoc: warning: received SystemTimeError while processing throttle, sleeping for 1 second and retrying...");
+                sleep(Duration::from_secs(1));
+                false
+            },
+            _ => true,
         }
     }
 
@@ -88,10 +96,12 @@ impl<C: PersistentCacheProvider> AocClient<C> {
             .load_throttle_timestamp()
             .unwrap_or(UNIX_EPOCH);
 
+        let client = Self::make_client(&session);
+
         AocClient {
             session,
             persistent_cache: cache_provider,
-            client: Self::make_client(),
+            client,
             throttle_timestamp,
             mem_cache: HashMap::new(),
             example_cache: HashMap::new(),
@@ -108,7 +118,6 @@ impl<C: PersistentCacheProvider> AocClient<C> {
         let text = self
             .client
             .get(format!("https://adventofcode.com/{year}/day/{day}/input"))
-            .header("Cookie", format!("session={}", self.session))
             .send()
             .and_then(|r| r.text());
 
@@ -161,7 +170,6 @@ impl<C: PersistentCacheProvider> AocClient<C> {
         let html = self
             .client
             .get(format!("https://adventofcode.com/{year}/day/{day}"))
-            .header("Cookie", format!("session={}", self.session))
             .send()
             .and_then(|r| r.text());
 
