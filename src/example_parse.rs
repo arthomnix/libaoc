@@ -34,7 +34,7 @@ impl Example {
                 "pre" => {
                     if !found_example
                         && found_for_example
-                        && element.children().collect::<Vec<_>>().len() == 1
+                        && element.children().count() == 1
                     {
                         if let Some(child) = element.first_element_child() {
                             if child.value().name() == "code" {
@@ -49,7 +49,7 @@ impl Example {
                     }
                 }
                 "code" => {
-                    if element.children().collect::<Vec<_>>().len() == 1 {
+                    if element.children().count() == 1 {
                         if let Some(child) = element.first_element_child() {
                             if child.value().name() == "em" {
                                 if part2 {
