@@ -1,6 +1,6 @@
 # libaoc
 
-A simple Rust library for retrieving Advent of Code input data. Used by my Advent of Code 2023 solutions.
+A simple Rust library for retrieving Advent of Code input data. Used by my Advent of Code 2023 and 2024 solutions.
 
 ## Guidelines compliance
 
