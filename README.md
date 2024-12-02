@@ -13,5 +13,6 @@ This library complies with the [Advent of Code automation guidelines](https://ol
 * Requests are throttled to 1 every 3 minutes
   * If a user requests input that would result in a request being made sooner than 3 minutes after the previous request, the function blocks until 3 minutes has elapsed since the previous request
   * When the `AocClient` is dropped, the timestamp of the last request is saved to disk and is loaded again when a new `AocClient` is created
-* The user agent is set to `libaoc/<version> (automated; +https://github.com/arthomnix/libaoc; +<contact email>) reqwest/0.11`
+* The user agent is set to `libaoc/<version> (automated; +https://github.com/arthomnix/libaoc; +<contact email>) reqwest/0.12`
   * The contact email has been redacted (and slightly obfuscated in the source) to stop it getting picked up by spambots; it is always the same
+  * The [From header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/From) is also set to the contact email
