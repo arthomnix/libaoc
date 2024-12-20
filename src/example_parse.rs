@@ -39,9 +39,9 @@ impl Example {
                         if let Some(child) = element.first_element_child() {
                             if child.value().name() == "code" {
                                 if part2 {
-                                    part2_example = Some(child.inner_html());
+                                    part2_example = Some(child.inner_html().replace("<em>", "").replace("</em>", ""));
                                 } else {
-                                    example = Some(child.inner_html());
+                                    example = Some(child.inner_html().replace("<em>", "").replace("</em>", ""));
                                 }
                                 found_example = true;
                             }
