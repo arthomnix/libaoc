@@ -5,7 +5,7 @@ use scraper::{CaseSensitivity, Element, Html, Selector};
 pub struct Example {
     pub data: String,
     pub part2_data: Option<String>,
-    pub part1_answer: String,
+    pub part1_answer: Option<String>,
     pub part2_answer: Option<String>,
 }
 
@@ -76,7 +76,7 @@ impl Example {
         }
 
         match (example, answer) {
-            (Some(example), Some(answer)) => Some(Example {
+            (Some(example), answer) => Some(Example {
                 data: html_escape::decode_html_entities(&example).to_string(),
                 part2_data: part2_example
                     .map(|s| html_escape::decode_html_entities(&s).to_string()),
